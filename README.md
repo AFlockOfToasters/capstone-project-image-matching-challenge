@@ -83,30 +83,3 @@ In order to test that predict works on a test set you created run:
 ```bash
 python modeling/predict.py models/linear data/X_test.csv data/y_test.csv
 ```
-
-## About MLFLOW -- delete this when using the template
-
-MLFlow is a tool for tracking ML experiments. You can run it locally or remotely. It stores all the information about experiments in a database.
-And you can see the overview via the GUI or access it via APIs. Sending data to mlflow is done via APIs. And with mlflow you can also store models on S3 where you version them and tag them as production for serving them in production.
-![mlflow workflow](images/0_general_tracking_mlflow.png)
-
-### MLFlow GUI
-
-You can group model trainings in experiments. The granularity of what an experiment is up to your usecase. Recommended is to have an experiment per data product, as for all the runs in an experiment you can compare the results.
-![gui](images/1_gui.png)
-
-### Code to send data to MLFlow
-
-In order to send data about your model you need to set the connection information, via the tracking uri and also the experiment name (otherwise the default one is used). One run represents a model, and all the rest is metadata. For example if you want to save train MSE, test MSE and validation MSE you need to name them as 3 different metrics.
-If you are doing CV you can set the tracking as nested.
-![mlflow code](images/2_code.png)
-
-### MLFlow metadata
-
-There is no constraint between runs to have the same metadata tracked. I.e. for one run you can track different tags, different metrics, and different parameters (in cv some parameters might not exist for some runs so this .. makes sense to be flexible).
-
-- tags can be anything you want.. like if you do CV you might want to tag the best model as "best"
-- params are perfect for hypermeters and also for information about the data pipeline you use, if you scaling vs normalization and so on
-- metrics.. should be numeric values as these can get plotted
-
-![mlflow metadata](images/3_metadata.png)

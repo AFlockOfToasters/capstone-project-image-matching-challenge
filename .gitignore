@@ -130,9 +130,7 @@ dmypy.json
 
 
 data/*
-models/*.sav
 mlruns
-models/*
 .DS_Store
 
 #config file has sensitive data

@@ -132,6 +132,7 @@ dmypy.json
 data/*
 mlruns
 .DS_Store
+models/LoFTR/weights/*
 
 #config file has sensitive data
 .mlflow_uri

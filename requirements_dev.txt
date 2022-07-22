@@ -8,3 +8,4 @@ statsmodels==0.13.2
 mlflow==1.27.0
 parsenvy==3.0.2
 opencv-python==4.6.0.66
+kornia==0.6.6

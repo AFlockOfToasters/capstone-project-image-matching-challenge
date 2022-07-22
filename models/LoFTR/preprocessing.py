@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import cv2
+import kornia as K
 
 def get_scenes(directory):
     # Generates a list of all building folder names
@@ -42,3 +44,12 @@ def load_pairs(scenes, datadir):
             pair = pd.concat([pair,pairappend],axis=0)
     return pair
 
+def load_torch_image(imgpath, device):
+    img = cv2.imread(imgpath)
+    scale = 840 / max(img.shape[0], img.shape[1])
+    w = int(img.shape[1] * scale)
+    h = int(img.shape[0] * scale)
+    img = cv2.resize(img, (w, h))
+    img = K.image_to_tensor(img, False).float() /255.
+    img = K.color.bgr_to_rgb(img)
+    return img.to(device)

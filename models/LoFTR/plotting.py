@@ -4,6 +4,12 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+import plotly.express as px
+
+# These are the plotting functions provided by LoFTR
+
 def _compute_conf_thresh(data):
     dataset_name = data['dataset_name'][0].lower()
     if dataset_name == 'scannet':
@@ -19,7 +25,7 @@ def _compute_conf_thresh(data):
 
 def make_matching_figure(
         img0, img1, mkpts0, mkpts1, color,
-        kpts0=None, kpts1=None, text=[], dpi=75, path=None):
+        kpts0=None, kpts1=None, text=[], dpi=75, path=None, alpha = 1, lines = True):
     # draw image pair
     assert mkpts0.shape[0] == mkpts1.shape[0], f'mkpts0: {mkpts0.shape[0]} v.s. mkpts1: {mkpts1.shape[0]}'
     fig, axes = plt.subplots(1, 2, figsize=(10, 6), dpi=dpi)
@@ -38,18 +44,17 @@ def make_matching_figure(
         axes[1].scatter(kpts1[:, 0], kpts1[:, 1], c='w', s=2)
 
     # draw matches
-    if mkpts0.shape[0] != 0 and mkpts1.shape[0] != 0:
+    if lines == True and mkpts0.shape[0] != 0 and mkpts1.shape[0] != 0:
         fig.canvas.draw()
         transFigure = fig.transFigure.inverted()
         fkpts0 = transFigure.transform(axes[0].transData.transform(mkpts0))
         fkpts1 = transFigure.transform(axes[1].transData.transform(mkpts1))
         fig.lines = [matplotlib.lines.Line2D((fkpts0[i, 0], fkpts1[i, 0]),
                                             (fkpts0[i, 1], fkpts1[i, 1]),
-                                            transform=fig.transFigure, c=color[i], linewidth=1)
+                                            transform=fig.transFigure, c=color[i], linewidth=1, alpha = alpha)
                                         for i in range(len(mkpts0))]
-        
-        axes[0].scatter(mkpts0[:, 0], mkpts0[:, 1], c=color, s=4)
-        axes[1].scatter(mkpts1[:, 0], mkpts1[:, 1], c=color, s=4)
+    axes[0].scatter(mkpts0[:, 0], mkpts0[:, 1], c=color, s=4)
+    axes[1].scatter(mkpts1[:, 0], mkpts1[:, 1], c=color, s=4)
 
     # put txts
     txt_color = 'k' if img0[:100, :200].mean() > 200 else 'w'
@@ -64,6 +69,45 @@ def make_matching_figure(
     else:
         return fig
 
+def make_matching_figure_plotly(
+        img0, img1, mkpts0, mkpts1, color, text=[], alpha=1):
+    # draw image pair
+    assert mkpts0.shape[0] == mkpts1.shape[0], f'mkpts0: {mkpts0.shape[0]} v.s. mkpts1: {mkpts1.shape[0]}'
+    
+    fig = make_subplots(rows = 1, cols = 2, horizontal_spacing = 0.01)
+    fig.add_trace(px.imshow(img0).data[0], row = 1, col = 1)
+    fig.add_trace(px.imshow(img1).data[0], row = 1, col = 2)
+
+    # draw matches
+    if mkpts0.shape[0] != 0 and mkpts1.shape[0] != 0:
+    #     fig.canvas.draw()
+    #     transFigure = fig.transFigure.inverted()
+        # fkpts0 = transFigure.transform(axes[0].transData.transform(mkpts0))
+        # fkpts1 = transFigure.transform(axes[1].transData.transform(mkpts1))
+    #     fig.lines = [matplotlib.lines.Line2D((fkpts0[i, 0], fkpts1[i, 0]),
+    #                                         (fkpts0[i, 1], fkpts1[i, 1]),
+    #                                         transform=fig.transFigure, c=color[i], linewidth=1, alpha = alpha)
+    #                                     for i in range(len(mkpts0))]
+
+        fig.add_trace(go.Scatter(x = mkpts0[:, 0], y = mkpts0[:, 1], mode = 'markers', marker_color=color, marker_size=5), row = 1, col = 1)
+        fig.add_trace(go.Scatter(x = mkpts1[:, 0], y = mkpts1[:, 1], mode = 'markers', marker_color=color, marker_size=5), row = 1, col = 2) 
+
+    txt_color = 'black' if img0[:100, :200].mean() > 200 else 'white'
+    
+    fig.add_annotation(text= '<br>'.join(text), 
+                    align='left',
+                    showarrow=False,
+                    xref='paper',
+                    yref='paper',
+                    x=0.025,
+                    y=0.99,
+                    font = {'size': 25, 'color': txt_color})
+    fig.update_layout(width = 1500, height = 500, 
+                        showlegend=False, margin=dict(l=20, r=20, t=20, b=20), 
+                        plot_bgcolor = 'rgba(0, 0, 0, 0)',paper_bgcolor = 'rgba(0, 0, 0, 0)')
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
+    return fig
 
 def _make_evaluation_figure(data, b_id, alpha='dynamic'):
     b_mask = data['m_bids'] == b_id
@@ -101,7 +145,7 @@ def _make_evaluation_figure(data, b_id, alpha='dynamic'):
     
     # make the figure
     figure = make_matching_figure(img0, img1, kpts0, kpts1,
-                                  color, text=text)
+                                    color, text=text)
     return figure
 
 def _make_confidence_figure(data, b_id):

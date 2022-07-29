@@ -1,5 +1,4 @@
 import io
-import base64
 import pandas as pd
 import numpy as np
 import kornia as K

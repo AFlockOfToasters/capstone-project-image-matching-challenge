@@ -47,7 +47,7 @@ def load_pairs(scenes, datadir):
 
 def load_torch_image(imgpath, device):
     img = cv2.imread(imgpath)
-    scale = 840 / max(img.shape[0], img.shape[1])
+    scale = 1120 / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
     img = cv2.resize(img, (w, h))
@@ -57,7 +57,7 @@ def load_torch_image(imgpath, device):
 
 def load_image(imgpath):
     img = cv2.imread(imgpath)
-    scale = 840 / max(img.shape[0], img.shape[1])
+    scale = 1120 / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
     img = cv2.resize(img, (w, h))

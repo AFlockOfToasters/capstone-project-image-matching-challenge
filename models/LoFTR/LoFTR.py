@@ -17,7 +17,7 @@ def get_pairs(filepath):
 
 def load_torch_image(imgpath, device):
     img = cv2.imread(imgpath)
-    scale = 840 / max(img.shape[0], img.shape[1])
+    scale = 1120 / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
     img = cv2.resize(img, (w, h))

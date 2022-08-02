@@ -11,18 +11,18 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
-def load_image(imgpath):
+def load_image(imgpath, res = 840):
     img = cv2.imread(imgpath)
-    scale = 840 / max(img.shape[0], img.shape[1])
+    scale = res / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
     img = cv2.resize(img, (w, h))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
 
-def load_torch_image(imgpath, device):
+def load_torch_image(imgpath, device, res=840):
     img = cv2.imread(imgpath)
-    scale = 840 / max(img.shape[0], img.shape[1])
+    scale = res / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
     img = cv2.resize(img, (w, h))
@@ -30,7 +30,7 @@ def load_torch_image(imgpath, device):
     img = K.color.bgr_to_rgb(img)
     return img.to(device)
 
-def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = True, dpi = 150):
+def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = True, dpi = 150, res=840):
     # Determine if a GPU is available, otherwise use CPU
     print("selecting device")
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -40,8 +40,8 @@ def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = Tr
     matcher = matcher.to(device).eval()
     # Run LoFTR
     print("loading images")
-    img0_torch = load_torch_image(img0_pth, device)
-    img1_torch = load_torch_image(img1_pth, device)
+    img0_torch = load_torch_image(img0_pth, device, res)
+    img1_torch = load_torch_image(img1_pth, device, res)
     batch = {"image0": K.color.rgb_to_grayscale(img0_torch), 
             "image1": K.color.rgb_to_grayscale(img1_torch)}
     print("matching images")
@@ -53,8 +53,8 @@ def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = Tr
     
     results = pd.DataFrame({'mkpts0': mkpts0.tolist(), 'mkpts1': mkpts1.tolist(), 'mconf': mconf.tolist()}) 
     print("loading images")
-    img0 = load_image(img0_pth)
-    img1 = load_image(img1_pth)
+    img0 = load_image(img0_pth, res)
+    img1 = load_image(img1_pth, res)
 
     color = cm.jet(results.query(f'mconf > {threshold}').mconf)
     text = [

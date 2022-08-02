@@ -136,7 +136,7 @@ def plot_camera_positions(Rs, Ts, img_ids, scene="", scalings = pd.read_csv(os.p
             arrowwidth=3,
             arrowcolor=str(list(next(col))).replace("[","rgba(").replace("]",")")
             )
-    fig.update_layout(title_text=scene.replace("_", " ").title())
+    fig.update_layout(margin={"l":2,"r":0,"b":2,"t":0,"pad":0},paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)", modebar_remove=["pan2d","select2d","lasso2d","autoScale2d"])
     return fig
 
 

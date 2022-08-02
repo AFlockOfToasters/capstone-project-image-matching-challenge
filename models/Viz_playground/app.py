@@ -28,6 +28,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
 
+
 ################################################################################
 # PLOTS
 ################################################################################
@@ -37,6 +38,8 @@ ALLSCENES = ["brandenburg_gate", "british_museum", "buckingham_palace",
  "sacre_coeur", "sagrada_familia", "st_pauls_cathedral", "st_peters_square",
  "taj_mahal", "temple_nara_japan", "trevi_fountain"]
 
+# for tests with a smaller sample size of plots (replotting takes very long)
+# ALLSCENES = ["brandenburg_gate", "british_museum"]
 
 curscene="british_museum"
 input_dir = '../../data/train/'
@@ -64,26 +67,19 @@ def plotter(scene,ids=None):
     print("done.")
     return fig
 
-def implot(idlist,scene=curscene,path=input_dir):
-    fig = make_subplots(rows=1, cols=2)
+def imshow(idlist,scene=curscene,path=input_dir):
+    imlist = []
     c = 1
     if len(idlist)>2:
         idlist = idlist[0:2]
     for id in idlist:
-        impath = os.path.join(path,scene,"images",id)
+        impath = os.path.join(path,str(scene),"images",str(id))
         print("reading ",impath," as no. ",c)
-        img = cv2.imread(impath)
-        try:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        except:
-            print("scene was changed, stuff broke... 🤷")
-        print("plotting")
-        fig.add_trace(go.Image(z=img),1,c)
-        print("done")
+        with open(impath,"rb") as openimage:
+            img = base64.b64encode(openimage.read()).decode('utf-8')
+        imlist.append(str(f"data:image/png;base64,{img}"))
         c += 1
-    fig.update_xaxes(visible=False)
-    fig.update_yaxes(visible=False)
-    return fig
+    return imlist
 
 def read_from_json(scene):
     print(f"loading {os.path.join(plot_dir,f'{scene}.json')}")
@@ -111,64 +107,92 @@ except:
     for scene, figure in zip(ALLSCENES,figlist):
         write_to_json(scene, figure)
 # to do: dieter will eine progress bar
+
 def empty_figure():
     fig = go.Figure(data=go.Scatter(x=[],y=[]))
-    fig.update_xaxes(visible=False)
-fig1 = figures[f"{curscene}"]
-fig2 = implot([],curscene)
-
-
+    fig.update_xaxes(visible=False, showticklabels=False, showgrid = False, gridcolor="rgba(0,0,0,0)")
+    fig.update_yaxes(visible=False, showticklabels=False, showgrid = False, gridcolor="rgba(0,0,0,0)")
+    fig.update_traces(visible=False)
+    fig.update_layout(margin=dict(l = 5, r = 5, t = 5, b = 5), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    return fig
+EMPTYFIGURE = empty_figure()
 ################################################################################
 # LAYOUT
 ################################################################################
 app.layout = html.Div(
-    [
-        html.H2(
-            id="title",
-            children="Dashboard prototype",
-        ),
-        html.H3(
-            id="subtitle",
-            children="Select a scene below, then two images to match against each other.",
-        ),
-        html.Div([
+    style={"height":"50%","width":"98%"},
+    children=[
+        # TITLE
+        html.H3(children="TWO EYES SEE M👁RE"),  #"◉ 📷 (☉.☉) ◎ 👁 👀"
+        html.H6(children="A Capstone-Project by Dr. Dieter Janzen and Dr. Bernd Ackermann"),
+        # TOP QUADRANTS
+        html.Div(children=[
+            # TOP LEFT
             html.Div(children=[
-                html.Label("Choose a scene"),
-                dcc.Dropdown(id="dropdown-menu",options = ALLSCENES),
-                html.Br(),
-                html.Label("Select two views (arrows) in the plot below"),
-                dcc.Graph(id="scatterplot")
-                ], 
-                style = {"padding":10,"flex":1}
-                ),
-            html.Div(children=[
+                # UI
+                html.Label("Scene"),
+                dcc.Dropdown(id="dropdown-menu",placeholder="Choose a Scene",options = [{"label": scenetitle.replace("_", " ").title() ,"value": scenetitle} for scenetitle in ALLSCENES]),
+                #html.Br(),
                 html.Label("Threshhold"),
-                dcc.Slider(0,1,0.2,id="threshhold_slider", value=0),
-                html.Br(),
+                dcc.Slider(min=0,max=1,id="threshhold_slider", value=0, tooltip={"placement":"bottom","always_visible":True}),
+                #html.Br(),
                 html.Label("Alpha"),
-                dcc.Slider(0,1,0.2,id="alpha_slider", value=1),
-                html.Br(),
-                html.Label("Image scale (WARNING: larger scales are more accurate, but need longer processing time!)"),
-                dcc.Slider(240,1120,80,id="scale_slider", value=840),
-                html.Br(),
+                dcc.Slider(min=0,max=1,id="alpha_slider", value=0.1, tooltip={"placement":"bottom","always_visible":True}),
+                #html.Br(),
+                html.Label("Image scale"),
+                dcc.Slider(240,1200,40,id="scale_slider", value=840, marks={240:"240 (fast)",480:"",720:"",960:"",1200:"1200 (slow)"}, tooltip={"placement":"bottom","always_visible":True}),
+                #html.Br(),
                 html.Button("reset selection", id="resetbutton", n_clicks=0),
                 html.Button("calculate matches", id="calculatebutton", n_clicks=0),
-                html.Br(),
-                html.Label(id = "selector", children="nothing selected"),
-                dcc.Graph(id="implot")
-                ]
-                ,style = {"padding":10,"flex":1}
-                )
-        ], style={'display': 'flex', 'flex-direction': 'row'}
-        ),
+                # INTERACTIVE TOP-DOWN-VIEW PLOT
+                html.Label("Click two views (arrows) in the plot below", style={"text-align":"center","display":"block"}),
+                dcc.Graph(id="scatterplot", figure = EMPTYFIGURE, style={"height":"60%"}),
+                ], 
+                style = {"width":"40%"}
+                ),
+            # TOP RIGHT
+            html.Div(children=[
 
-        html.Img(id="pairplot", style={"width":"50%"}),
+
+                # TEXT SELECTION INDICATOR
+                html.Label(id="selector", children="nothing selected",style={"font-weight":"bold","text-align":"center","display":"block"}),
+                html.Div(children=[
+                    html.Img(id="implot1", style={"width":"50%","padding":5, "object-fit":"contain"}),
+                    html.Img(id="implot2", style={"width":"50%","padding":5, "object-fit":"contain"})
+                    ],
+                    style={"height":"30%",'display': 'flex', 'flex-direction': 'row'}),
+                html.Img(id="pairplot", style={"width":"100%"})
+                ],
+                style = {"width":"60%"}
+                )
+
+        ], style={'display': 'flex', 'flex-direction': 'row'}#,"height":"50%"}
+        ),
+        # # BOTTOM QUADRANTS
+        # html.Div([
+        #     # BOTTOM LEFT
+        #     html.Div(children=[
+        #         # LOFTR-CALCULATED PAIRING-PLOT
+
+        #         ],
+        #         style={"width":"50%"}),
+        #     # BOTTOM RIGHT
+        #     html.Div(children=[ 
+        #         # IMAGE SELECTION INDICATOR
+
+
+        #     ],
+        #     style={"width":"50%",'display': 'flex', 'flex-direction': 'row'})
+
+        # ],
+        # style={'display': 'flex', 'flex-direction': 'row'}),
+        
         dcc.Markdown('''
         **To Do:**
-        - Add plot interactivity to show images and image pair matchings
         - Add a second dashboard with upload functionality for own custom images, then calculate their relative translations and rotations",
         '''),
-        dcc.Store(id="selectionbuffer", data=[])    # if this doesnt work, use pedantic!
+        # INVISIBLE MEMORY STORAGE COMPONENT TO STORE SELECTION DATA
+        dcc.Store(id="selectionbuffer", data=[])
     ]
 )
 
@@ -180,14 +204,17 @@ app.layout = html.Div(
 # dropdown callback for scene selection
 @app.callback(
     Output("scatterplot", "figure"),
-    Input("dropdown-menu", "value"))
-def update_graph(value):
+    Output("resetbutton","n_clicks"),
+    Input("dropdown-menu", "value"),
+    State("resetbutton","n_clicks"))
+def update_graph(scene,reset):
     print("plotting scene...")
-    if value:
-        fig = figures[value]
+    if scene:
+        fig = figures[scene]
+        reset += 1
     else:
         raise PreventUpdate
-    return fig
+    return fig, reset
 
 
 
@@ -195,62 +222,65 @@ def update_graph(value):
 @app.callback(
     Output("selector", "children"),
     Output("selectionbuffer", "data"),
-    Output("implot", "figure"),
+    Output("implot1", "src"),
+    Output("implot2", "src"),
     Input("scatterplot", "clickData"),
     Input("resetbutton", "n_clicks"),
     State("selectionbuffer","data"),
     State("dropdown-menu", "value"))
 def return_clicked_id(clickData, reset, selections, scene):
+    if scene == None:
+        raise PreventUpdate
     if ctx.triggered_id == "resetbutton" and reset > 0:
         print("resetting...")
-        fig2 = implot([],scene)
-        return ["nothing selected", [], fig2]
+        return ["nothing selected", [], "",""]
     sel = selections
     if not clickData:
-        fig2 = implot([],scene)
-        return ["nothing selected", [], fig2]
+        return ["nothing selected", [], "",""]
     clicked = str(clickData["points"][0]["customdata"])+".jpg"
     if clicked not in sel:
         sel.append(clicked)
     else:
-        fig2 = implot(sel,scene)
-        return [f"You can't select the same image twice. You selected {sel[0]} and {sel[1]}", sel, fig2]
+        fig2 = imshow(sel,scene)
+        return [f"You can't select the same image twice. You selected {sel[0]} and {sel[1]}", sel, fig2[0],fig2[1]]
     if selections == []:
-        fig2 = implot([],scene)
-        return ["nothing selected", sel, fig2]
+        return ["nothing selected", [], "",""]
     elif len(sel)==1:
-        fig2 = implot(sel,scene)
-        return [f"you selected {sel[0]}", sel, fig2]
+        fig2 = imshow(sel,scene)
+        return [f"you selected {sel[0]}", sel, fig2[0],""]
     elif len(sel)>2:
         sel = sel[1:3]
     if len(sel)==2:
-        fig2 = implot(sel,scene)
-        return [f"you selected {sel[0]} and {sel[1]}", sel, fig2]
+        fig2 = imshow(sel,scene)
+        return [f"you selected {sel[0]} and {sel[1]}", sel, fig2[0],fig2[1]]
     else:
         print(sel)
         raise Exception("unexpected selection error")
+
 
 @app.callback(
     Output("pairplot", "src"),
     Input("calculatebutton", "n_clicks"),
     State("dropdown-menu", "value"),
-    State("selectionbuffer", "data")
+    State("selectionbuffer", "data"),
+    State("threshhold_slider", "value"),
+    State("alpha_slider", "value"),
+    State("scale_slider", "value")
 )
-def plot_imagepair(calculate, scene, selections):
-    if calculate > 0:
-        if len(selections) != 2:
-            raise PreventUpdate
-        print("loading plotpaths")
-        imgpath1 = os.path.join(input_dir,scene,"images",selections[0])
-        imgpath2 = os.path.join(input_dir,scene,"images",selections[1])
-        print(imgpath1)
-        print(imgpath2)
-        print("buffering image")
-        buf = lp.single_loftr_figure(imgpath1, imgpath2, alpha = 0.1, threshold = 0, lines = True, dpi = 150)
-        print("encoding")
-        imgdata = base64.b64encode(buf.getbuffer()).decode("utf8") # encode to html elements
-        print("done")
-        return f"data:image/png;base64,{imgdata}"
+def plot_imagepair(calculate, scene, selections,threshhold,alpha,scale):
+    if len(selections) != 2 or calculate == 0 or scene == None:
+        raise PreventUpdate
+    print("loading plotpaths")
+    imgpath1 = os.path.join(input_dir,scene,"images",selections[0])
+    imgpath2 = os.path.join(input_dir,scene,"images",selections[1])
+    print(imgpath1)
+    print(imgpath2)
+    print("buffering image")
+    buf = lp.single_loftr_figure(imgpath1, imgpath2, alpha = alpha, threshold = threshhold, lines = True, dpi = 150 , res=scale)
+    print("encoding")
+    imgdata = base64.b64encode(buf.getbuffer()).decode("utf8") # encode to html elements
+    print("done")
+    return f"data:image/png;base64,{imgdata}"
     
 # Add the server clause:
 if __name__ == "__main__":

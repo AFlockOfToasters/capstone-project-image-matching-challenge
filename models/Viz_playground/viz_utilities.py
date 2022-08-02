@@ -6,7 +6,7 @@ import model
 import validation
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-import plotly.subplots as make_subplots
+from plotly.subplots import make_subplots
 
 def load_pairs_and_cal(scenes, datadir):
     
@@ -112,7 +112,12 @@ def plot_camera_positions(Rs, Ts, img_ids, scene="", scalings = pd.read_csv(os.p
                 **hover
             )
         )
-    col = iter(plt.cm.Blues(np.linspace(0.01, 0.99, len(C_x))))
+    if cmap == "Blues":
+        col = iter(plt.cm.Blues(np.linspace(0.01, 0.99, len(C_x))))
+    elif cmap == "Reds":
+        col = iter(plt.cm.Reds(np.linspace(0.01, 0.99, len(C_x))))
+    else:
+        raise Exception("I'm sorry! Supported cmaps are 'Reds' and 'Blues'!")
     for x_, y_, x_d, y_d in zip(C_x, C_z, x_dir, y_dir):
         fig.add_annotation(
             x=x_,  # arrows' head
@@ -131,5 +136,16 @@ def plot_camera_positions(Rs, Ts, img_ids, scene="", scalings = pd.read_csv(os.p
             arrowwidth=3,
             arrowcolor=str(list(next(col))).replace("[","rgba(").replace("]",")")
             )
-    fig.update_layout(height=600, width=800, title_text=scene.replace("_", " "))
+    fig.update_layout(title_text=scene.replace("_", " ").title())
     return fig
+
+
+
+    # def load_image(imgpath):
+    # img = cv2.imread(imgpath)
+    # scale = 840 / max(img.shape[0], img.shape[1])
+    # w = int(img.shape[1] * scale)
+    # h = int(img.shape[0] * scale)
+    # img = cv2.resize(img, (w, h))
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # return img

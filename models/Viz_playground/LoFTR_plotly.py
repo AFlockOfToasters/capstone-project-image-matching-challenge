@@ -1,5 +1,4 @@
 import io
-from matplotlib import patheffects
 import pandas as pd
 import numpy as np
 import kornia as K
@@ -39,7 +38,7 @@ def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = Tr
     # Initialize LoFTR and load the outdoor weights
     print("initializing")
     matcher = KF.LoFTR(pretrained=None)
-    
+
     if where == "outdoor":
         matcher.load_state_dict(torch.load("weights/outdoor_ds.ckpt")['state_dict'])
     elif where == "indoor":

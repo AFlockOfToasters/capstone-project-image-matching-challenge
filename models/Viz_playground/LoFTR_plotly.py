@@ -1,4 +1,5 @@
 import io
+from matplotlib import patheffects
 import pandas as pd
 import numpy as np
 import kornia as K
@@ -8,6 +9,7 @@ import cv2
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as PathEffects
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -30,13 +32,21 @@ def load_torch_image(imgpath, device, res=840):
     img = K.color.bgr_to_rgb(img)
     return img.to(device)
 
-def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = True, dpi = 150, res=840):
+def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = True, dpi = 150, res=840, where="outdoor"):
     # Determine if a GPU is available, otherwise use CPU
     print("selecting device")
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     # Initialize LoFTR and load the outdoor weights
     print("initializing")
-    matcher = KF.LoFTR(pretrained='outdoor')
+    matcher = KF.LoFTR(pretrained=None)
+    
+    if where == "outdoor":
+        matcher.load_state_dict(torch.load("weights/outdoor_ds.ckpt")['state_dict'])
+    elif where == "indoor":
+        matcher.load_state_dict(torch.load("weights/indoor_ds_new.ckpt")['state_dict'])
+    else:
+        raise Exception("No weights for LoFTR defined!")
+
     matcher = matcher.to(device).eval()
     # Run LoFTR
     print("loading images")
@@ -102,9 +112,9 @@ def plot_matches(
         axes[1].scatter(mkpts1[:, 0], mkpts1[:, 1], c=color, s=4)
 
     # put txt
-    txt_color = 'k' if img0[:100, :200].mean() > 200 else 'w'
-    fig.text(
+    txt = fig.text(
         0.01, 0.99, '\n'.join(text), transform=fig.axes[0].transAxes,
-        fontsize=15, va='top', ha='left', color=txt_color)
+        fontsize=15, va='top', ha='left', color="w")
+    txt.set_path_effects([PathEffects.withStroke(linewidth =2, foreground="k")])
     
     return fig

@@ -6,7 +6,6 @@ import os
 import base64
 import numpy as np
 
-# plotly & dash
 #import plotly
 #import plotly.graph_objects as go
 #from plotly.subplots import make_subplots

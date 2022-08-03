@@ -1,20 +1,23 @@
-import io
-import json
-from distutils.log import error
+#import io
+#import json
+#from distutils.log import error
 import pandas as pd
 import os
 import base64
 import numpy as np
-import plotly
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+
+# plotly & dash
+#import plotly
+#import plotly.graph_objects as go
+#from plotly.subplots import make_subplots
 import dash
 from dash import html,dcc,ctx
 from dash.dependencies import Input,Output,State
 from dash.exceptions import PreventUpdate
+
+# own .py files
 import viz_utilities as vu
 import LoFTR_plotly as lp
-import cv2
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
@@ -27,77 +30,38 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # this is needed by gunicorn command in procfile
 server = app.server
 
+################################################################################
+# GLOBAL APP VARIABLES
+################################################################################
 
-################################################################################
-# PLOTS
-################################################################################
 ALLSCENES = ["brandenburg_gate", "british_museum", "buckingham_palace",
  "colosseum_exterior", "grand_place_brussels", "lincoln_memorial_statue",
  "notre_dame_front_facade", "pantheon_exterior", "piazza_san_marco",
  "sacre_coeur", "sagrada_familia", "st_pauls_cathedral", "st_peters_square",
  "taj_mahal", "temple_nara_japan", "trevi_fountain"]
 
+# for tests with a smaller sample size of plots (replotting takes very long)
+# ALLSCENES = ["brandenburg_gate", "british_museum"]
 
-curscene="british_museum"
-input_dir = '../../data/train/'
-plot_dir = "Plots/"
-pairings, cal, scalings = vu.load_pairs_and_cal(ALLSCENES,input_dir)
+INPUT_DIR = '../../data/train/' # Has to point to the train directory of the dataset.
+PLOT_DIR = "Plots/" # where the directional scatterplots are stored or read from
+HOST = os.getenv("HOST", "127.0.0.1") # default for local run: os.getenv("HOST", "127.0.0.1")
+PORT = os.getenv("PORT", "8050") # default for local run: os.getenv("PORT", "8050")
+DEBUG = True # enables verbose debugging in console and on the dashboard
 
 
-def plotter(scene,ids=None):
-    if ids:
-        print("selected elements detected...")
-        print(len(ids))
-        cmap="Reds"
-        scenecal = pd.DataFrame()
-        for id in ids:
-            scenecal.append(cal.query(f"image_id == {id}"))
-    else:
-        print(f"preparing {scene}")
-        scenecal = cal.query(f"scene == '{scene}'")
-        cmap="Blues"   
-    print("calculating Rs/Ts")
-    Rs = [np.array(scenecal.iloc[i,2].split()).reshape(3,3).astype(float) for i in range(scenecal.shape[0])]
-    Ts = [np.array(scenecal.iloc[i,3].split()).reshape(3,1).astype(float) for i in range(scenecal.shape[0])]
-    print("plotting")
-    fig = vu.plot_camera_positions(Rs,Ts,scene=scene,img_ids=scenecal["image_id"],cmap=cmap)
-    print("done.")
-    return fig
+EMPTYFIGURE = vu.empty_figure() # white placeholder figure
 
-def implot(idlist,scene=curscene,path=input_dir):
-    fig = make_subplots(rows=1, cols=2)
-    c = 1
-    if len(idlist)>2:
-        idlist = idlist[0:2]
-    for id in idlist:
-        impath = os.path.join(path,scene,"images",id)
-        print("reading ",impath," as no. ",c)
-        img = cv2.imread(impath)
-        try:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        except:
-            print("scene was changed, stuff broke... 🤷")
-        print("plotting")
-        fig.add_trace(go.Image(z=img),1,c)
-        print("done")
-        c += 1
-    fig.update_xaxes(visible=False)
-    fig.update_yaxes(visible=False)
-    return fig
+pairings, cal, scalings = vu.load_pairs_and_cal(ALLSCENES,INPUT_DIR)
 
-def read_from_json(scene):
-    print(f"loading {os.path.join(plot_dir,f'{scene}.json')}")
-    figure = plotly.io.read_json(os.path.join(plot_dir,f"{scene}.json"))
-    return figure
 
-def write_to_json(scene,figure):
-    print(f"writing figure for scene: {scene}")
-    figure.write_json(os.path.join(plot_dir,f"{scene}.json"))
-    print("done.")
+################################################################################
+# PLOTS
+################################################################################
 
 try: 
     print("attempting to read from existing files")
-    figlist = [read_from_json(scene) for scene in ALLSCENES]
+    figlist = [vu.read_from_json(scene, PLOT_DIR) for scene in ALLSCENES]
     print("Success!")
     figures = dict(zip(ALLSCENES,figlist))
 except:
@@ -105,153 +69,158 @@ except:
     recreateflag = input("Type y to proceed: ")
     if recreateflag != ("y" or "Y"):
         raise Exception("Failed to load data.")
-    figlist = [plotter(scene) for scene in ALLSCENES]
+    figlist = [vu.plotter(scene, cal, scalings=scalings) for scene in ALLSCENES]
     print("writing new json files")
     figures = dict(zip(ALLSCENES,figlist))
     for scene, figure in zip(ALLSCENES,figlist):
-        write_to_json(scene, figure)
-# to do: dieter will eine progress bar
-def empty_figure():
-    fig = go.Figure(data=go.Scatter(x=[],y=[]))
-    fig.update_xaxes(visible=False)
-fig1 = figures[f"{curscene}"]
-fig2 = implot([],curscene)
-
+        vu.write_to_json(scene, figure, cal, PLOT_DIR)
+# to do: dieter wants a progress bar
 
 ################################################################################
 # LAYOUT
 ################################################################################
+# MAIN CONTAINER
 app.layout = html.Div(
-    [
-        html.H2(
-            id="title",
-            children="Dashboard prototype",
-        ),
-        html.H3(
-            id="subtitle",
-            children="Select a scene below, then two images to match against each other.",
-        ),
-        html.Div([
+    style={"height":"50%","width":"98%"},
+    children=[
+        # TITLE
+        html.H3(children="TWO EYES SEE M👁RE"),  #"◉ 📷 (☉.☉) ◎ 👁 👀"
+        html.H6(children="A Capstone-Project by Dr. Dieter Janzen and Dr. Bernd Ackermann"),
+        # VIZ BODY
+        html.Div(children=[
+            # LEFT HALF CONTAINER
             html.Div(children=[
-                html.Label("Choose a scene"),
-                dcc.Dropdown(id="dropdown-menu",options = ALLSCENES),
-                html.Br(),
-                html.Label("Select two views (arrows) in the plot below"),
-                dcc.Graph(id="scatterplot")
-                ], 
-                style = {"padding":10,"flex":1}
-                ),
-            html.Div(children=[
+                # UI ELEMENTS
+                html.Label("Scene"),
+                dcc.Dropdown(id="dropdown-menu",placeholder="Choose a Scene",options = [{"label": scenetitle.replace("_", " ").title() ,"value": scenetitle} for scenetitle in ALLSCENES]),
                 html.Label("Threshhold"),
-                dcc.Slider(0,1,0.2,id="threshhold_slider", value=0),
-                html.Br(),
+                dcc.Slider(min=0,max=1,id="threshhold_slider", value=0, tooltip={"placement":"bottom","always_visible":True}),
                 html.Label("Alpha"),
-                dcc.Slider(0,1,0.2,id="alpha_slider", value=1),
-                html.Br(),
-                html.Label("Image scale (WARNING: larger scales are more accurate, but need longer processing time!)"),
-                dcc.Slider(240,1120,80,id="scale_slider", value=840),
-                html.Br(),
+                dcc.Slider(min=0,max=1,id="alpha_slider", value=0.1, tooltip={"placement":"bottom","always_visible":True}),
+                html.Label("Image scale"),
+                dcc.Slider(240,1200,40,id="scale_slider", value=840, marks={240:"240 (fast)",480:"",720:"",960:"",1200:"1200 (slow)"}, tooltip={"placement":"bottom","always_visible":True}),
                 html.Button("reset selection", id="resetbutton", n_clicks=0),
                 html.Button("calculate matches", id="calculatebutton", n_clicks=0),
-                html.Br(),
-                html.Label(id = "selector", children="nothing selected"),
-                dcc.Graph(id="implot")
-                ]
-                ,style = {"padding":10,"flex":1}
-                )
-        ], style={'display': 'flex', 'flex-direction': 'row'}
-        ),
+                # INTERACTIVE TOP-DOWN-VIEW PLOT
+                html.Label("Click two views (arrows) in the plot below", style={"text-align":"center","display":"block"}),
+                dcc.Graph(id="scatterplot", figure = EMPTYFIGURE, style={"height":"60%"}),
+                ], 
+                style = {"width":"40%"} # % of browser window width
+                ), # END LEFT HALF CONTAINER
+            # RIGHT HALF CONTAINER
+            html.Div(children=[
+                # TEXT SELECTION INDICATOR
+                html.Label(id="selector", children="nothing selected",style={"font-weight":"bold","text-align":"center","display":"block"}),
+                # IMAGE SELECTION INDICATOR CONTAINER
+                html.Div(children=[
+                    html.Img(id="implot1", style={"width":"50%","padding":5, "object-fit":"contain"}), # % of right half container width
+                    html.Img(id="implot2", style={"width":"50%","padding":5, "object-fit":"contain"})  # % of right half container width
+                    ],
+                    style={"height":"30%",'display': 'flex', 'flex-direction': 'row'}
+                    ), # END IMAGE SELECTION INDICATOR CONTAINER
+                # LoFTR PAIRING PLOT
+                html.Img(id="pairplot", style={"width":"100%"}) # % of right half container width
+                ],
+                style = {"width":"60%"} # % of browser window width 
+                ) #END RIGHT HALF CONTAINER
+        ], 
+        style={'display': 'flex', 'flex-direction': 'row'} # VIZ BODY CONTAINER STYLE
+        ), # END VIZ BODY CONTAINER
 
-        html.Img(id="pairplot", style={"width":"50%"}),
-        dcc.Markdown('''
-        **To Do:**
-        - Add plot interactivity to show images and image pair matchings
-        - Add a second dashboard with upload functionality for own custom images, then calculate their relative translations and rotations",
-        '''),
-        dcc.Store(id="selectionbuffer", data=[])    # if this doesnt work, use pedantic!
+        # dcc.Markdown('''
+        # **To Do:**
+        # - Add a second dashboard with upload functionality for own custom images, then calculate their relative translations and rotations",
+        # '''),
+
+        # INVISIBLE MEMORY STORAGE COMPONENT TO STORE SELECTION DATA
+        dcc.Store(id="selectionbuffer", data=[])
     ]
-)
+) # END MAIN CONTAINER
 
 ################################################################################
 # INTERACTION CALLBACKS
 ################################################################################
-# https://dash.plotly.com/basic-callbacks
-
 # dropdown callback for scene selection
 @app.callback(
-    Output("scatterplot", "figure"),
-    Input("dropdown-menu", "value"))
-def update_graph(value):
+    Output("scatterplot", "figure"),    # Trigger an update of the interactive top-down-view-plot
+    Output("resetbutton","n_clicks"),   # Trigger a click on the reset button to remove selections of the prior scene -> causes reset callback in the selector
+    Input("dropdown-menu", "value"),    # Callback on change in dropdown-menu value
+    State("resetbutton","n_clicks"))    # Read resetbutton state
+def update_graph(scene,reset):
+    # 1. takes the current scene and returns the corresponding top-down-plot
+    # 2. triggers the reset button to prevent selection errors after switching scenes
     print("plotting scene...")
-    if value:
-        fig = figures[value]
-    else:
+    if scene:
+        fig = figures[scene]
+        reset += 1
+    else: # not scene means, this callback was triggered during initialization and doesn't need an update
         raise PreventUpdate
-    return fig
+    return fig, reset
 
-
-
-# selection callback for pair selection
+# selection callback for pair selection and selection reset
 @app.callback(
-    Output("selector", "children"),
-    Output("selectionbuffer", "data"),
-    Output("implot", "figure"),
-    Input("scatterplot", "clickData"),
-    Input("resetbutton", "n_clicks"),
-    State("selectionbuffer","data"),
-    State("dropdown-menu", "value"))
+    Output("selector", "children"),     # Update Selector String
+    Output("selectionbuffer", "data"),  # Update Selector buffer
+    Output("implot1", "src"),           # Display selected image 1
+    Output("implot2", "src"),           # Display selected image 1
+    Input("scatterplot", "clickData"),  # Callback on clicking a Datapoint in the interactive top-down-view-plot
+    Input("resetbutton", "n_clicks"),   # Callback on clicking the reset button to remove current selections
+    State("selectionbuffer","data"),    # Check current state of Selector buffer to see the previsously clicked image
+    State("dropdown-menu", "value"))    # Check current state of the Scene Selector to gain the scene filepath context
 def return_clicked_id(clickData, reset, selections, scene):
-    if ctx.triggered_id == "resetbutton" and reset > 0:
+    if scene == None or ctx.triggered_id == None: # prevent update on initial callback trigger
+        raise PreventUpdate
+    if ctx.triggered_id == "resetbutton" and reset > 0: # did the reset button get triggered?
         print("resetting...")
-        fig2 = implot([],scene)
-        return ["nothing selected", [], fig2]
-    sel = selections
-    if not clickData:
-        fig2 = implot([],scene)
-        return ["nothing selected", [], fig2]
-    clicked = str(clickData["points"][0]["customdata"])+".jpg"
+        return ["nothing selected", [], "",""]
+    sel = selections # assign selections from buffer
+    clicked = str(clickData["points"][0]["customdata"])+".jpg" # extract image file name from clicked datapoint-id
     if clicked not in sel:
-        sel.append(clicked)
-    else:
-        fig2 = implot(sel,scene)
-        return [f"You can't select the same image twice. You selected {sel[0]} and {sel[1]}", sel, fig2]
-    if selections == []:
-        fig2 = implot([],scene)
-        return ["nothing selected", sel, fig2]
-    elif len(sel)==1:
-        fig2 = implot(sel,scene)
-        return [f"you selected {sel[0]}", sel, fig2]
-    elif len(sel)>2:
+        sel.append(clicked) #append clicked datapoint to current selection list
+    else: # clicked the previously selected image. this triggers an Error
+        figs = vu.imshow(sel,scene,INPUT_DIR)
+        return [f"You can't select the same image twice. You selected {sel[0]} and {sel[1]}", sel, figs[0],figs[1]]
+    if len(sel)==1: # clicked first image and starting with an empty selection. return 1 selected image
+        figs = vu.imshow(sel,scene,INPUT_DIR)
+        return [f"you selected {sel[0]}", sel, figs[0],""]
+    elif len(sel)>2: # clicked the third image, overwriting the first selection
         sel = sel[1:3]
-    if len(sel)==2:
-        fig2 = implot(sel,scene)
-        return [f"you selected {sel[0]} and {sel[1]}", sel, fig2]
-    else:
-        print(sel)
+    if len(sel)==2: # clicked the second image or selection overwritten to have 2 again. return 2 selected images
+        figs = vu.imshow(sel,scene,INPUT_DIR)
+        return [f"you selected {sel[0]} and {sel[1]}", sel, figs[0],figs[1]]
+    else: # This never triggered, but I'm paranoid about this dashboard
+        print("How did you get this selection? - ",sel)
         raise Exception("unexpected selection error")
 
+# Callback to trigger LoFTR Modeling of two selected images and giving out an interconnected pairplot image as result
 @app.callback(
-    Output("pairplot", "src"),
-    Input("calculatebutton", "n_clicks"),
-    State("dropdown-menu", "value"),
-    State("selectionbuffer", "data")
+    Output("pairplot", "src"),              # plot is output as an image, because dash can't handle matplotlib plots
+    Input("calculatebutton", "n_clicks"),   # Trigger Callback on clicking the calculate button
+#    Input("resetbutton", "n_clicks"),       # Trigger Callback on clicking the reset button
+    State("dropdown-menu", "value"),        # Check currently selected scene for filepath context
+    State("selectionbuffer", "data"),       # Check currently selected input images for LoFTR
+    State("threshhold_slider", "value"),    # Check currently selected confidence threshhold to filter image matchings
+    State("alpha_slider", "value"),         # Check currently selected line alpha to make the connecting lines more/less rtansparent
+    State("scale_slider", "value")          # Check currently selected image scale for LoFTR to compute. larger images deliver better results, but take longer to compute
 )
-def plot_imagepair(calculate, scene, selections):
-    if calculate > 0:
-        if len(selections) != 2:
-            raise PreventUpdate
-        print("loading plotpaths")
-        imgpath1 = os.path.join(input_dir,scene,"images",selections[0])
-        imgpath2 = os.path.join(input_dir,scene,"images",selections[1])
-        print(imgpath1)
-        print(imgpath2)
-        print("buffering image")
-        buf = lp.single_loftr_figure(imgpath1, imgpath2, alpha = 0.1, threshold = 0, lines = True, dpi = 150)
-        print("encoding")
-        imgdata = base64.b64encode(buf.getbuffer()).decode("utf8") # encode to html elements
-        print("done")
-        return f"data:image/png;base64,{imgdata}"
+def plot_imagepair(calculate, scene, selections,threshhold,alpha,scale):
+    # if ctx.triggered_id == "resetbutton" and reset > 0: # did the reset button get triggered?
+    #     print("resetting pairplot")
+    #     return ""
+    if len(selections) != 2 or calculate == 0 or scene == None: # prevent update on initial callback trigger, or if insufficient scenes were selected
+        raise PreventUpdate
+    print("loading plotpaths")
+    imgpath1 = os.path.join(INPUT_DIR,scene,"images",selections[0])
+    imgpath2 = os.path.join(INPUT_DIR,scene,"images",selections[1])
+    print(imgpath1)
+    print(imgpath2)
+    print("buffering image")
+    buf = lp.single_loftr_figure(imgpath1, imgpath2, alpha = alpha, threshold = threshhold, lines = True, dpi = 150 , res=scale)
+    print("encoding")
+    imgdata = base64.b64encode(buf.getbuffer()).decode("utf8") # encode to html elements
+    print("done")
+    return f"data:image/png;base64,{imgdata}"
     
 # Add the server clause:
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=DEBUG, host=HOST,port=PORT)

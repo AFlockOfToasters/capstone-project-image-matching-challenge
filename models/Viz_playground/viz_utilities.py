@@ -1,12 +1,11 @@
-import pandas as pd
 import os
+import base64
+import plotly
+import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-import model
-import validation
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+#from plotly.subplots import make_subplots
 
 def load_pairs_and_cal(scenes, datadir):
     
@@ -52,7 +51,7 @@ def load_pairs_and_cal(scenes, datadir):
 
 
 
-def plot_camera_positions(Rs, Ts, img_ids, scene="", scalings = pd.read_csv(os.path.join('../../data/train/', "scaling_factors.csv")), cmap="Blues", opacity = 1):
+def plot_camera_positions(Rs, Ts, img_ids,scalings, scene="", cmap="Blues", opacity = 1):
     scale = 1
     if scene != "":
         scale = scalings.query("scene == @scene")["scaling_factor"]
@@ -136,16 +135,57 @@ def plot_camera_positions(Rs, Ts, img_ids, scene="", scalings = pd.read_csv(os.p
             arrowwidth=3,
             arrowcolor=str(list(next(col))).replace("[","rgba(").replace("]",")")
             )
-    fig.update_layout(title_text=scene.replace("_", " ").title())
+    fig.update_layout(margin={"l":2,"r":0,"b":2,"t":0,"pad":0},paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)", modebar_remove=["pan2d","select2d","lasso2d","autoScale2d"])
     return fig
 
+def empty_figure():
+    fig = go.Figure(data=go.Scatter(x=[],y=[]))
+    fig.update_xaxes(visible=False, showticklabels=False, showgrid = False, gridcolor="rgba(0,0,0,0)")
+    fig.update_yaxes(visible=False, showticklabels=False, showgrid = False, gridcolor="rgba(0,0,0,0)")
+    fig.update_traces(visible=False)
+    fig.update_layout(margin=dict(l = 5, r = 5, t = 5, b = 5), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    return fig
 
+def read_from_json(scene, plot_dir):
+    print(f"loading {os.path.join(plot_dir,f'{scene}.json')}")
+    figure = plotly.io.read_json(os.path.join(plot_dir,f"{scene}.json"))
+    return figure
 
-    # def load_image(imgpath):
-    # img = cv2.imread(imgpath)
-    # scale = 840 / max(img.shape[0], img.shape[1])
-    # w = int(img.shape[1] * scale)
-    # h = int(img.shape[0] * scale)
-    # img = cv2.resize(img, (w, h))
-    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # return img
+def write_to_json(scene,figure, cal, plot_dir):
+    print(f"writing figure for scene: {scene}")
+    figure.write_json(os.path.join(plot_dir,f"{scene}.json"))
+    print("done.")
+
+def imshow(idlist,scene,path):
+    imlist = []
+    c = 1
+    if len(idlist)>2:
+        idlist = idlist[0:2]
+    for id in idlist:
+        impath = os.path.join(path,str(scene),"images",str(id))
+        print("reading ",impath," as no. ",c)
+        with open(impath,"rb") as openimage:
+            img = base64.b64encode(openimage.read()).decode('utf-8')
+        imlist.append(str(f"data:image/png;base64,{img}"))
+        c += 1
+    return imlist
+
+def plotter(scene,cal,scalings,ids=None):
+    if ids:
+        print("selected elements detected...")
+        print(len(ids))
+        cmap="Reds"
+        scenecal = pd.DataFrame()
+        for id in ids:
+            scenecal.append(cal.query(f"image_id == {id}"))
+    else:
+        print(f"preparing {scene}")
+        scenecal = cal.query(f"scene == '{scene}'")
+        cmap="Blues"   
+    print("calculating Rs/Ts")
+    Rs = [np.array(scenecal.iloc[i,2].split()).reshape(3,3).astype(float) for i in range(scenecal.shape[0])]
+    Ts = [np.array(scenecal.iloc[i,3].split()).reshape(3,1).astype(float) for i in range(scenecal.shape[0])]
+    print("plotting")
+    fig = plot_camera_positions(Rs,Ts,scene=scene,img_ids=scenecal["image_id"],cmap=cmap, scalings=scalings)
+    print("done.")
+    return fig

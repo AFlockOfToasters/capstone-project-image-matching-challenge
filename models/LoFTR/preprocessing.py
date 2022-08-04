@@ -9,13 +9,6 @@ def get_scenes(directory):
     scenes.sort()
     return scenes
 
-def image_resize(img, height):
-    width = int(img.shape[1] * (height/img.shape[0]))
-    dim = (width, height)
-    resized = cv2.resize(img, dim)
-    
-    return resized
-
 def load_pairs(scenes, datadir):
     """
     Load the image pair data from the corresponding directory.

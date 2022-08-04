@@ -11,6 +11,8 @@ import cv2
 import warnings
 warnings.filterwarnings("ignore")
 
+# Run this script to match all possible image matches in a folder (given as filepath).
+
 def get_pairs(filepath):
     pairs = [combo for combo in combinations(os.listdir(filepath), 2)]
     return pairs

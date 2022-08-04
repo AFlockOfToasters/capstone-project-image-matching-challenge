@@ -1,4 +1,4 @@
-# Two Eyes See More - A Capstone Project by Dieter Janzen and Bernd Ackermann
+# Two Eyes See M👁️re - A Capstone Project by Dieter Janzen and Bernd Ackermann
 
 Position-based image matching is used in 3D scanning of real objects under normally calibrated conditions. Using [LoFTR](https://zju3dv.github.io/loftr/), we match images regardless of size, lighting conditions, obstacles, and even photo filters, enabling the first step in digital 3D preservation of monuments and landmarks from mixed public images.
 

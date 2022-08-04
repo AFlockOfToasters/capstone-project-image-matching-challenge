@@ -207,3 +207,29 @@ def evaluate(input_dir, sample_id_list, fund_matrix_list):
         thresholds_t)
 
     return maa
+
+def evaluate_single(input_dir, sample_id, fund_matrix):
+    thresholds_q = np.linspace(1, 10, 10)
+    thresholds_t = np.geomspace(0.2, 5, 10)
+
+    # Load per-scene scaling factors.
+    scaling_dict = {}
+    with open(os.path.join(input_dir, f"scaling_factors.csv")) as f:
+        reader = csv.reader(f, delimiter=',')
+        for i, row in enumerate(reader):
+            # Skip header.
+            if i == 0:
+                continue
+            scaling_dict[row[0]] = float(row[1])
+
+    predictions = {}
+    predictions[sample_id] = np.array([float(v) for v in fund_matrix.split(' ')]).reshape([3, 3])
+
+    maa, _, errors_dict_q, errors_dict_t = EvaluateSubmission(
+        predictions,
+        input_dir,
+        scaling_dict,
+        thresholds_q,
+        thresholds_t)
+
+    return maa, errors_dict_q, errors_dict_t

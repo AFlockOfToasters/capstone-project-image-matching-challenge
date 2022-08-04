@@ -18,13 +18,14 @@ def image_resize(img, height):
 
 def load_pairs(scenes, datadir):
     """
-    load the image data from the correcsponding directory, together with the pairing metrics.
+    Load the image pair data from the corresponding directory.
+    
     Args:
-        scenes:     List of scenes (folder names under /train)
-        datadir:    String of the directory to source image data from
+        scenes:         List of scenes (folder names under /train)
+        input_dir:      String of the directory to source image data from
+
     Returns:
-        pair: dataframe containing the image pairings
-        calibration: dataframe contaaining the calibration data per image, including the corresponding scene
+        pair:           DataFrame containing the image pairings
     """
     pair = pd.DataFrame()    
     calibration = pd.DataFrame()
@@ -46,10 +47,19 @@ def load_pairs(scenes, datadir):
 
 def load_torch_image(imgpath, device):
     img = cv2.imread(imgpath)
-    scale = 840 / max(img.shape[0], img.shape[1])
+    scale = 1120 / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
     img = cv2.resize(img, (w, h))
     img = K.image_to_tensor(img, False).float() /255.
     img = K.color.bgr_to_rgb(img)
     return img.to(device)
+
+def load_image(imgpath):
+    img = cv2.imread(imgpath)
+    scale = 1120 / max(img.shape[0], img.shape[1])
+    w = int(img.shape[1] * scale)
+    h = int(img.shape[0] * scale)
+    img = cv2.resize(img, (w, h))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    return img

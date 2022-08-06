@@ -20,11 +20,13 @@ def readb64(uri):
    return img
 
 def load_image(imgpath, res = 840):
-    # try:
-    #     img = cv2.imread(imgpath)
-    # except:
-    print("custom image recognized!")
-    img = readb64(imgpath)
+    try:
+        img = readb64(imgpath)
+        print("custom image recognized!")    
+    except:
+        img = cv2.imread(imgpath)
+        print("image path recognized!") 
+
     scale = res / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
@@ -33,11 +35,12 @@ def load_image(imgpath, res = 840):
     return img
 
 def load_torch_image(imgpath, device, res=840):
-    # try:
-    #     img = cv2.imread(imgpath)
-    # except:
-    print("custom image recognized!")
-    img = readb64(imgpath)
+    try:
+        img = readb64(imgpath)
+        print("custom image recognized!")    
+    except:
+        img = cv2.imread(imgpath)
+        print("image path recognized!") 
     scale = res / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)

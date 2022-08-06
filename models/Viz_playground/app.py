@@ -65,14 +65,16 @@ uploadbutton = html.Div(
         'borderStyle': 'dashed',
         'borderRadius': '5px',
         'textAlign': 'center',
-        'margin': '10px'
+        'margin': '15px',
+        "object-fit":"contain",
+        "justify-content":"center"
     }
 )
 
 def imdiv(contents):
     # HTML images accept base64 encoded strings in the same format
     # that is supplied by the upload
-    return html.Div([html.Img(src=contents)],style={"width":"50%","padding":5, "object-fit":"contain"})
+    return html.Img(src=contents,style={"height":350,"width":"100%","padding":5, "object-fit":"contain"})
 
 
 
@@ -103,7 +105,6 @@ except:
 ################################################################################
 # MAIN CONTAINER
 app.layout = html.Div(
-    style={"height":"50%","width":"98%"},
     children=[
         html.H3(children="TWO EYES SEE M👁RE"),  #"◉ 📷 (☉.☉) ◎ 👁 👀"
         html.H6(children="A Capstone-Project by Dr. Dieter Janzen and Dr. Bernd Ackermann"),
@@ -116,9 +117,11 @@ app.layout = html.Div(
                     children=[
                         # VIZ BODY
                         html.Div(
+                            style={"height":"50%","width":"98%",'display': 'flex', 'flex-direction': 'row'}, # VIZ BODY CONTAINER STYLE
                             children=[
                                 # LEFT HALF CONTAINER
                                 html.Div(
+                                    style={"width":"40%"}, # % of browser window width
                                     children=[
                                         # UI ELEMENTS
                                         html.Label("Scene"),
@@ -170,11 +173,10 @@ app.layout = html.Div(
                                             id="scatterplot", 
                                             figure = EMPTYFIGURE, 
                                             style={"height":"60%"}),
-                                        ], 
-                                    style={"width":"40%"} # % of browser window width
-                                    ), # END LEFT HALF CONTAINER
+                                        ]), # END LEFT HALF CONTAINER
                                 # RIGHT HALF CONTAINER
                                 html.Div(
+                                    style = {"width":"60%"}, # % of browser window width 
                                     children=[
                                         # TEXT SELECTION INDICATOR
                                         html.Label(
@@ -183,6 +185,7 @@ app.layout = html.Div(
                                             style={"font-weight":"bold","text-align":"center","display":"block"}),
                                         # IMAGE SELECTION INDICATOR CONTAINER
                                         html.Div(
+                                            style={"height":300,'display': 'flex', 'flex-direction': 'row'},
                                             children=[
                                                 html.Img(
                                                     id="implot1", 
@@ -190,30 +193,25 @@ app.layout = html.Div(
                                                 html.Img(
                                                     id="implot2", 
                                                     style={"width":"50%","padding":5, "object-fit":"contain"})  # % of right half container width
-                                                ],
-                                            style={"height":"30%",'display': 'flex', 'flex-direction': 'row'}
-                                            ), # END IMAGE SELECTION INDICATOR CONTAINER
+                                                ]), # END IMAGE SELECTION INDICATOR CONTAINER
                                         # LoFTR PAIRING PLOT
                                         html.Img(
                                             id="pairplot", 
                                             style={"width":"100%"}) # % of right half container width
-                                        ],
-                                    style = {"width":"60%"} # % of browser window width 
-                                    ) #END RIGHT HALF CONTAINER
-                                ], 
-                            style={'display': 'flex', 'flex-direction': 'row'} # VIZ BODY CONTAINER STYLE
-                            ) # END VIZ BODY CONTAINER
-                        ]
-                    ), # END TAB 1
+                                        ]) #END RIGHT HALF CONTAINER
+                                ]) # END VIZ BODY CONTAINER
+                        ]), # END TAB 1
                 # TAB 2
                 dcc.Tab(
                     label="Upload custom images",
                     children=[
                         # VIZ BODY
                         html.Div(
+                            style={"height":"50%","width":"98%",'display': 'flex', 'flex-direction': 'row'}, # VIZ BODY CONTAINER STYLE
                             children=[
                                 # LEFT HALF CONTAINER
                                 html.Div(
+                                    style = {"width":"40%"}, # % of browser window width
                                     children=[
                                         # UI ELEMENTS
                                         html.Label("Weights"),
@@ -258,45 +256,37 @@ app.layout = html.Div(
                                             children="calculate matches", 
                                             id="calculatebutton_c", 
                                             n_clicks=0),
-                                        ], 
-                                    style = {"width":"40%"} # % of browser window width
-                                    ), # END LEFT HALF CONTAINER
+                                        ]), # END LEFT HALF CONTAINER
                                 # RIGHT HALF CONTAINER
                                 html.Div(
+                                    style={"width":"60%"},
                                     children=[
                                         # TEXT SELECTION INDICATOR
                                         html.Label(
                                             id="load_indicator", 
-                                            children="nothing uploaded",
+                                            children="Nothing uploaded (don't worry, your images are deleted, as soon as you refresh the page)",
                                             style={"font-weight":"bold","text-align":"center","display":"block"}),
                                         # IMAGE SELECTION INDICATOR CONTAINER
                                         html.Div(
+                                            style={"width":"100%",'display': 'flex', 'flex-direction': 'row'},
                                             children=[
                                                 dcc.Upload(
                                                     id="imupload1",
-                                                    children=uploadbutton,
-                                                    style={"width":"50%","padding":5, "object-fit":"contain"}),
+                                                    style={"width":"100%","padding":5,"justify-content":"center", "align-items":"center"},
+                                                    children=uploadbutton),
                                                 dcc.Upload(
                                                     id="imupload2",
-                                                    children=uploadbutton,
-                                                    style={"width":"50%","padding":5, "object-fit":"contain"})
-                                                ],
-                                            style={"width":"50%","padding":5, "object-fit":"contain"})  # % of right half container width
-                                        ],
-                                    style={"height":"30%",'display': 'flex', 'flex-direction': 'row'}
-                                    ), # END IMAGE SELECTION INDICATOR CONTAINER
-                                # LoFTR PAIRING PLOT
-                                html.Img(
-                                    id="pairplot_c", 
-                                    style={"width":"100%"}) # % of right half container width
-                                ],
-                            style = {"width":"60%"} # % of browser window width 
-                            ) #END RIGHT HALF CONTAINER
-                        ], 
-                    style={'display': 'flex', 'flex-direction': 'row'} # VIZ BODY CONTAINER STYLE
-                    ), # END VIZ BODY CONTAINER
-            ]
-        ),
+                                                    style={"width":"100%","padding":5,"justify-content":"center", "align-items":"center"},
+                                                    children=uploadbutton)
+                                                ]),
+                                        # LoFTR PAIRING PLOT
+                                        html.Img(
+                                            id="pairplot_c", 
+                                            style={"width":"100%"}) # % of right half container width
+                                        ]), # END IMAGE SELECTION INDICATOR CONTAINER
+                                ]) #END RIGHT HALF CONTAINER
+                        ]), # END VIZ BODY CONTAINER
+                ]), # END TAB 2
     dcc.Store(
         id="uploadbuffer", 
         data=["",""]),
@@ -305,59 +295,6 @@ app.layout = html.Div(
         data=[])
     ]
 ) # END APP
-
-#################
-# OUTCOMMENTED! #
-#################
-    #     # VIZ BODY
-    #     html.Div(id="vizbody",children=[
-    #         # LEFT HALF CONTAINER
-    #         html.Div(id="lefthalfcontainer",children=[
-    #             # UI ELEMENTS
-    #             html.Label("Scene"),
-    #             dcc.Dropdown(id="dropdown-menu",placeholder="Choose a Scene",options = [{"label": scenetitle.replace("_", " ").title() ,"value": scenetitle} for scenetitle in ALLSCENES]),
-    #             html.Label("Threshhold"),
-    #             dcc.Slider(min=0,max=1,id="threshhold_slider", value=0, tooltip={"placement":"bottom","always_visible":True}),
-    #             html.Label("Alpha"),
-    #             dcc.Slider(min=0,max=1,id="alpha_slider", value=0.1, tooltip={"placement":"bottom","always_visible":True}),
-    #             html.Label("Image scale"),
-    #             dcc.Slider(240,1200,40,id="scale_slider", value=840, marks={240:"240 (fast)",480:"",720:"",960:"",1200:"1200 (slow)"}, tooltip={"placement":"bottom","always_visible":True}),
-    #             html.Button("reset selection", id="resetbutton", n_clicks=0),
-    #             html.Button("calculate matches", id="calculatebutton", n_clicks=0),
-    #             # INTERACTIVE TOP-DOWN-VIEW PLOT
-    #             html.Label("Click two views (arrows) in the plot below", style={"text-align":"center","display":"block"}),
-    #             dcc.Graph(id="scatterplot", figure = EMPTYFIGURE, style={"height":"60%"}),
-    #             ], 
-    #             style = {"width":"40%"} # % of browser window width
-    #             ), # END LEFT HALF CONTAINER
-    #         # RIGHT HALF CONTAINER
-    #         html.Div(id="righthalfcontainer",children=[
-    #             # TEXT SELECTION INDICATOR
-    #             html.Label(id="selector", children="nothing selected",style={"font-weight":"bold","text-align":"center","display":"block"}),
-    #             # IMAGE SELECTION INDICATOR CONTAINER
-    #             html.Div(children=[
-    #                 html.Img(id="implot1", style={"width":"50%","padding":5, "object-fit":"contain"}), # % of right half container width
-    #                 html.Img(id="implot2", style={"width":"50%","padding":5, "object-fit":"contain"})  # % of right half container width
-    #                 ],
-    #                 style={"height":"30%",'display': 'flex', 'flex-direction': 'row'}
-    #                 ), # END IMAGE SELECTION INDICATOR CONTAINER
-    #             # LoFTR PAIRING PLOT
-    #             html.Img(id="pairplot", style={"width":"100%"}) # % of right half container width
-    #             ],
-    #             style = {"width":"60%"} # % of browser window width 
-    #             ) #END RIGHT HALF CONTAINER
-    #     ], 
-    #     style={'display': 'flex', 'flex-direction': 'row'} # VIZ BODY CONTAINER STYLE
-    #     ), # END VIZ BODY CONTAINER
-
-    #     # dcc.Markdown('''
-    #     # **To Do:**
-    #     # - Add a second dashboard with upload functionality for own custom images, then calculate their relative translations and rotations",
-    #     # '''),
-
-    #     # INVISIBLE MEMORY STORAGE COMPONENT TO STORE SELECTION DATA
-    #     dcc.Store(id="selectionbuffer", data=[])
-    # ]
 
 ################################################################################
 # INTERACTION CALLBACKS TAB 1
@@ -449,25 +386,37 @@ def plot_imagepair(calculate, scene, selections,threshhold,alpha,scale):
 ################################################################################
 # Upload callback
 @app.callback(
+Output("load_indicator", "children"),     # Update Selector String
 Output("imupload1","children"),
 Output("imupload2","children"),
 Output("uploadbuffer","data"),
 Input("imupload1","contents"),
 Input("imupload2","contents"),
 Input("resetbutton_c","n_clicks"),
+State("imupload1","filename"),
+State("imupload2","filename"),
 State("uploadbuffer","data")
 )
-def upload1(contents1=None,contents2=None,reset=0,buffer=["",""]):
+def upload1(contents1=None,contents2=None,reset=0,filename1=None,filename2=None,buffer=["",""]):
     if ctx.triggered_id == None: # prevent update on initial callback trigger
         raise PreventUpdate
     elif ctx.triggered_id == "resetbutton_c" and reset > 0: # did the reset button get triggered?
-        return uploadbutton,uploadbutton,["",""]
+        return "Nothing uploaded",uploadbutton,uploadbutton,["",""]
     elif ctx.triggered_id == "imupload1": # upload 1 triggered?
         buffer[0] = contents1
     elif ctx.triggered_id == "imupload2": # upload 2 triggered?
         buffer[1] = contents2
+    loadednames = [filename if img != "" else "" for img,filename in zip(buffer, [filename1,filename2])]
+    try:
+        loadednames.remove("")
+    except ValueError:
+        pass
+    if len(loadednames)==1:
+        loadindicator = f"You uploaded {loadednames[0]}"
+    else:
+        loadindicator = f"You uploaded {loadednames[0]} and {loadednames[1]}"
     imdivs = [imdiv(img) if img != "" else uploadbutton for img in buffer]
-    return imdivs[0],imdivs[1], buffer
+    return loadindicator,imdivs[0],imdivs[1], buffer
 
 
 # Callback to trigger LoFTR Modeling of two selected images and giving out an interconnected pairplot image as result

@@ -3,8 +3,8 @@
 #from distutils.log import error
 import pandas as pd
 import os
-import base64
 import numpy as np
+import base64
 
 #import plotly
 #import plotly.graph_objects as go
@@ -24,8 +24,7 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 ################################################################################
 # APP INITIALIZATION
 ################################################################################
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets,suppress_callback_exceptions=True)
 # this is needed by gunicorn command in procfile
 server = app.server
 
@@ -52,6 +51,32 @@ DEBUG = True # enables verbose debugging in console and on the dashboard
 EMPTYFIGURE = vu.empty_figure() # white placeholder figure
 
 pairings, cal, scalings = vu.load_pairs_and_cal(ALLSCENES,INPUT_DIR)
+
+uploadbutton = html.Div(
+    children=[
+        'Drag and Drop or ',
+        html.A('Select a File'),
+        html.Br(),
+        "(allowed formats are .jpg and .png)"
+    ],
+    style={
+        'width': '100%',
+        'borderWidth': '1px',
+        'borderStyle': 'dashed',
+        'borderRadius': '5px',
+        'textAlign': 'center',
+        'margin': '15px',
+        "object-fit":"contain",
+        "justify-content":"center"
+    }
+)
+
+def imdiv(contents):
+    # HTML images accept base64 encoded strings in the same format
+    # that is supplied by the upload
+    return html.Img(src=contents,style={"height":350,"width":"100%","padding":5, "object-fit":"contain"})
+
+
 
 
 ################################################################################
@@ -80,64 +105,199 @@ except:
 ################################################################################
 # MAIN CONTAINER
 app.layout = html.Div(
-    style={"height":"50%","width":"98%"},
     children=[
-        # TITLE
         html.H3(children="TWO EYES SEE M👁RE"),  #"◉ 📷 (☉.☉) ◎ 👁 👀"
         html.H6(children="A Capstone-Project by Dr. Dieter Janzen and Dr. Bernd Ackermann"),
-        # VIZ BODY
-        html.Div(children=[
-            # LEFT HALF CONTAINER
-            html.Div(children=[
-                # UI ELEMENTS
-                html.Label("Scene"),
-                dcc.Dropdown(id="dropdown-menu",placeholder="Choose a Scene",options = [{"label": scenetitle.replace("_", " ").title() ,"value": scenetitle} for scenetitle in ALLSCENES]),
-                html.Label("Threshhold"),
-                dcc.Slider(min=0,max=1,id="threshhold_slider", value=0, tooltip={"placement":"bottom","always_visible":True}),
-                html.Label("Alpha"),
-                dcc.Slider(min=0,max=1,id="alpha_slider", value=0.1, tooltip={"placement":"bottom","always_visible":True}),
-                html.Label("Image scale"),
-                dcc.Slider(240,1200,40,id="scale_slider", value=840, marks={240:"240 (fast)",480:"",720:"",960:"",1200:"1200 (slow)"}, tooltip={"placement":"bottom","always_visible":True}),
-                html.Button("reset selection", id="resetbutton", n_clicks=0),
-                html.Button("calculate matches", id="calculatebutton", n_clicks=0),
-                # INTERACTIVE TOP-DOWN-VIEW PLOT
-                html.Label("Click two views (arrows) in the plot below", style={"text-align":"center","display":"block"}),
-                dcc.Graph(id="scatterplot", figure = EMPTYFIGURE, style={"height":"60%"}),
-                ], 
-                style = {"width":"40%"} # % of browser window width
-                ), # END LEFT HALF CONTAINER
-            # RIGHT HALF CONTAINER
-            html.Div(children=[
-                # TEXT SELECTION INDICATOR
-                html.Label(id="selector", children="nothing selected",style={"font-weight":"bold","text-align":"center","display":"block"}),
-                # IMAGE SELECTION INDICATOR CONTAINER
-                html.Div(children=[
-                    html.Img(id="implot1", style={"width":"50%","padding":5, "object-fit":"contain"}), # % of right half container width
-                    html.Img(id="implot2", style={"width":"50%","padding":5, "object-fit":"contain"})  # % of right half container width
-                    ],
-                    style={"height":"30%",'display': 'flex', 'flex-direction': 'row'}
-                    ), # END IMAGE SELECTION INDICATOR CONTAINER
-                # LoFTR PAIRING PLOT
-                html.Img(id="pairplot", style={"width":"100%"}) # % of right half container width
-                ],
-                style = {"width":"60%"} # % of browser window width 
-                ) #END RIGHT HALF CONTAINER
-        ], 
-        style={'display': 'flex', 'flex-direction': 'row'} # VIZ BODY CONTAINER STYLE
-        ), # END VIZ BODY CONTAINER
-
-        # dcc.Markdown('''
-        # **To Do:**
-        # - Add a second dashboard with upload functionality for own custom images, then calculate their relative translations and rotations",
-        # '''),
-
-        # INVISIBLE MEMORY STORAGE COMPONENT TO STORE SELECTION DATA
-        dcc.Store(id="selectionbuffer", data=[])
+        # START TABS
+        dcc.Tabs(
+            children=[
+                # TAB 1
+                dcc.Tab(
+                    label="Explore the Google dataset",
+                    children=[
+                        # VIZ BODY
+                        html.Div(
+                            style={"height":"50%","width":"98%",'display': 'flex', 'flex-direction': 'row'}, # VIZ BODY CONTAINER STYLE
+                            children=[
+                                # LEFT HALF CONTAINER
+                                html.Div(
+                                    style={"width":"40%"}, # % of browser window width
+                                    children=[
+                                        # UI ELEMENTS
+                                        html.Label("Scene"),
+                                        dcc.Dropdown(
+                                            id="dropdown-menu",
+                                            placeholder="Choose a Scene",
+                                            options = [{"label": scenetitle.replace("_", " ").title() ,"value": scenetitle} for scenetitle in ALLSCENES]),
+                                        html.Label("Threshhold"),
+                                        dcc.Slider(
+                                            min=0,
+                                            max=1,
+                                            id="threshhold_slider", 
+                                            value=0, 
+                                            tooltip={"placement":"bottom","always_visible":True}),
+                                        html.Label("Alpha"),
+                                        dcc.Slider(
+                                            min=0,
+                                            max=1,
+                                            id="alpha_slider", 
+                                            value=0.1, 
+                                            tooltip={"placement":"bottom","always_visible":True}),
+                                        html.Label("Image scale"),
+                                        dcc.Slider(
+                                            min=240,
+                                            max=1200,
+                                            step=40,
+                                            id="scale_slider", 
+                                            value=840, 
+                                            marks={
+                                                240:"240 (fast)",
+                                                480:"",
+                                                720:"",
+                                                960:"",
+                                                1200:"1200 (slow)"}, 
+                                                tooltip={"placement":"bottom","always_visible":True}),
+                                        html.Button(
+                                            children="reset selection", 
+                                            id="resetbutton", 
+                                            n_clicks=0),
+                                        html.Button(
+                                            children="calculate matches", 
+                                            id="calculatebutton", 
+                                            n_clicks=0),
+                                        # INTERACTIVE TOP-DOWN-VIEW PLOT
+                                        html.Label(
+                                            children="Click two views (arrows) in the plot below", 
+                                            style={"text-align":"center","display":"block"}),
+                                        dcc.Graph(
+                                            id="scatterplot", 
+                                            figure = EMPTYFIGURE, 
+                                            style={"height":"60%"}),
+                                        ]), # END LEFT HALF CONTAINER
+                                # RIGHT HALF CONTAINER
+                                html.Div(
+                                    style = {"width":"60%"}, # % of browser window width 
+                                    children=[
+                                        # TEXT SELECTION INDICATOR
+                                        html.Label(
+                                            id="selector", 
+                                            children="nothing selected",
+                                            style={"font-weight":"bold","text-align":"center","display":"block"}),
+                                        # IMAGE SELECTION INDICATOR CONTAINER
+                                        html.Div(
+                                            style={"height":300,'display': 'flex', 'flex-direction': 'row'},
+                                            children=[
+                                                html.Img(
+                                                    id="implot1", 
+                                                    style={"width":"50%","padding":5, "object-fit":"contain"}), # % of right half container width
+                                                html.Img(
+                                                    id="implot2", 
+                                                    style={"width":"50%","padding":5, "object-fit":"contain"})  # % of right half container width
+                                                ]), # END IMAGE SELECTION INDICATOR CONTAINER
+                                        # LoFTR PAIRING PLOT
+                                        html.Img(
+                                            id="pairplot", 
+                                            style={"width":"100%"}) # % of right half container width
+                                        ]) #END RIGHT HALF CONTAINER
+                                ]) # END VIZ BODY CONTAINER
+                        ]), # END TAB 1
+                # TAB 2
+                dcc.Tab(
+                    label="Upload custom images",
+                    children=[
+                        # VIZ BODY
+                        html.Div(
+                            style={"height":"50%","width":"98%",'display': 'flex', 'flex-direction': 'row'}, # VIZ BODY CONTAINER STYLE
+                            children=[
+                                # LEFT HALF CONTAINER
+                                html.Div(
+                                    style = {"width":"40%"}, # % of browser window width
+                                    children=[
+                                        # UI ELEMENTS
+                                        html.Label("Weights"),
+                                        dcc.RadioItems(
+                                            id="weights_radio", 
+                                            options=[{"label":"Outdoors","value":"outdoor"},{"label":"Indoors","value":"indoor"}],
+                                            value="outdoor", 
+                                            inline=True),
+                                        html.Label("Threshhold"),
+                                        dcc.Slider(
+                                            min=0,
+                                            max=1,
+                                            id="threshhold_slider_c", 
+                                            value=0, 
+                                            tooltip={"placement":"bottom","always_visible":True}),
+                                        html.Label("Alpha"),
+                                        dcc.Slider(
+                                            min=0,
+                                            max=1,
+                                            id="alpha_slider_c", 
+                                            value=0.1, 
+                                            tooltip={"placement":"bottom","always_visible":True}),
+                                        html.Label("Image scale"),
+                                        dcc.Slider(
+                                            min=240,
+                                            max=1200,
+                                            step=40,
+                                            id="scale_slider_c", 
+                                            value=840, 
+                                            marks={
+                                                240:"240 (fast)",
+                                                480:"",
+                                                720:"",
+                                                960:"",
+                                                1200:"1200 (slow)"}, 
+                                            tooltip={"placement":"bottom","always_visible":True}),
+                                        html.Button(
+                                            children="reset selection", 
+                                            id="resetbutton_c", 
+                                            n_clicks=0),
+                                        html.Button(
+                                            children="calculate matches", 
+                                            id="calculatebutton_c", 
+                                            n_clicks=0),
+                                        ]), # END LEFT HALF CONTAINER
+                                # RIGHT HALF CONTAINER
+                                html.Div(
+                                    style={"width":"60%"},
+                                    children=[
+                                        # TEXT SELECTION INDICATOR
+                                        html.Label(
+                                            id="load_indicator", 
+                                            children="Nothing uploaded (don't worry, your images are deleted, as soon as you refresh the page)",
+                                            style={"font-weight":"bold","text-align":"center","display":"block"}),
+                                        # IMAGE SELECTION INDICATOR CONTAINER
+                                        html.Div(
+                                            style={"width":"100%",'display': 'flex', 'flex-direction': 'row'},
+                                            children=[
+                                                dcc.Upload(
+                                                    id="imupload1",
+                                                    style={"width":"100%","padding":5,"justify-content":"center", "align-items":"center"},
+                                                    children=uploadbutton),
+                                                dcc.Upload(
+                                                    id="imupload2",
+                                                    style={"width":"100%","padding":5,"justify-content":"center", "align-items":"center"},
+                                                    children=uploadbutton)
+                                                ]),
+                                        # LoFTR PAIRING PLOT
+                                        html.Img(
+                                            id="pairplot_c", 
+                                            style={"width":"100%"}) # % of right half container width
+                                        ]), # END IMAGE SELECTION INDICATOR CONTAINER
+                                ]) #END RIGHT HALF CONTAINER
+                        ]), # END VIZ BODY CONTAINER
+                ]), # END TAB 2
+    dcc.Store(
+        id="uploadbuffer", 
+        data=["",""]),
+    dcc.Store(
+        id="selectionbuffer", 
+        data=[])
     ]
-) # END MAIN CONTAINER
+) # END APP
 
 ################################################################################
-# INTERACTION CALLBACKS
+# INTERACTION CALLBACKS TAB 1
 ################################################################################
 # dropdown callback for scene selection
 @app.callback(
@@ -148,8 +308,9 @@ app.layout = html.Div(
 def update_graph(scene,reset):
     # 1. takes the current scene and returns the corresponding top-down-plot
     # 2. triggers the reset button to prevent selection errors after switching scenes
-    print("plotting scene...")
+
     if scene:
+        print("plotting scene...")
         fig = figures[scene]
         reset += 1
     else: # not scene means, this callback was triggered during initialization and doesn't need an update
@@ -219,7 +380,68 @@ def plot_imagepair(calculate, scene, selections,threshhold,alpha,scale):
     imgdata = base64.b64encode(buf.getbuffer()).decode("utf8") # encode to html elements
     print("done")
     return f"data:image/png;base64,{imgdata}"
-    
+
+################################################################################
+# INTERACTION CALLBACKS TAB 2
+################################################################################
+# Upload callback
+@app.callback(
+Output("load_indicator", "children"),     # Update Selector String
+Output("imupload1","children"),
+Output("imupload2","children"),
+Output("uploadbuffer","data"),
+Input("imupload1","contents"),
+Input("imupload2","contents"),
+Input("resetbutton_c","n_clicks"),
+State("imupload1","filename"),
+State("imupload2","filename"),
+State("uploadbuffer","data")
+)
+def upload1(contents1=None,contents2=None,reset=0,filename1=None,filename2=None,buffer=["",""]):
+    if ctx.triggered_id == None: # prevent update on initial callback trigger
+        raise PreventUpdate
+    elif ctx.triggered_id == "resetbutton_c" and reset > 0: # did the reset button get triggered?
+        return "Nothing uploaded",uploadbutton,uploadbutton,["",""]
+    elif ctx.triggered_id == "imupload1": # upload 1 triggered?
+        buffer[0] = contents1
+    elif ctx.triggered_id == "imupload2": # upload 2 triggered?
+        buffer[1] = contents2
+    loadednames = [filename if img != "" else "" for img,filename in zip(buffer, [filename1,filename2])]
+    try:
+        loadednames.remove("")
+    except ValueError:
+        pass
+    if len(loadednames)==1:
+        loadindicator = f"You uploaded {loadednames[0]}"
+    else:
+        loadindicator = f"You uploaded {loadednames[0]} and {loadednames[1]}"
+    imdivs = [imdiv(img) if img != "" else uploadbutton for img in buffer]
+    return loadindicator,imdivs[0],imdivs[1], buffer
+
+
+# Callback to trigger LoFTR Modeling of two selected images and giving out an interconnected pairplot image as result
+@app.callback(
+    Output("pairplot_c", "src"),              # plot is output as an image, because dash can't handle matplotlib plots
+    Input("calculatebutton_c", "n_clicks"),   # Trigger Callback on clicking the calculate button
+    State("uploadbuffer", "data"),       # Check currently selected input images for LoFTR
+    State("weights_radio","value"),
+    State("threshhold_slider_c", "value"),    # Check currently selected confidence threshhold to filter image matchings
+    State("alpha_slider_c", "value"),         # Check currently selected line alpha to make the connecting lines more/less rtansparent
+    State("scale_slider_c", "value")          # Check currently selected image scale for LoFTR to compute. larger images deliver better results, but take longer to compute
+)
+def plot_imagepair_c(calculate, images, weights, threshhold, alpha, scale):
+    # if ctx.triggered_id == "resetbutton" and reset > 0: # did the reset button get triggered?
+    #     print("resetting pairplot")
+    #     return ""
+    if len(images) != 2 or calculate == 0: # prevent update on initial callback trigger, or if insufficient scenes were selected
+        raise PreventUpdate
+    print(f"buffering image")
+    buf = lp.single_loftr_figure(images[0], images[1], alpha = alpha, threshold = threshhold, lines = True, dpi = 150 , res=scale, where=weights)
+    print("encoding")
+    imgdata = base64.b64encode(buf.getbuffer()).decode("utf8") # encode to html elements
+    print("done")
+    return f"data:image/png;base64,{imgdata}"
+
 # Add the server clause:
 if __name__ == "__main__":
     app.run(debug=DEBUG, host=HOST,port=PORT)

@@ -5,6 +5,7 @@ import kornia as K
 import kornia.feature as KF
 import torch
 import cv2
+import base64
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -12,8 +13,20 @@ import matplotlib.patheffects as PathEffects
 import warnings
 warnings.filterwarnings("ignore")
 
+def readb64(uri):
+   encoded_data = uri.split(',')[1]
+   nparr = np.frombuffer(base64.b64decode(encoded_data), np.uint8)
+   img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+   return img
+
 def load_image(imgpath, res = 840):
-    img = cv2.imread(imgpath)
+    try:
+        img = readb64(imgpath)
+        print("custom image recognized!")    
+    except:
+        img = cv2.imread(imgpath)
+        print("image path recognized!") 
+
     scale = res / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
@@ -22,7 +35,12 @@ def load_image(imgpath, res = 840):
     return img
 
 def load_torch_image(imgpath, device, res=840):
-    img = cv2.imread(imgpath)
+    try:
+        img = readb64(imgpath)
+        print("custom image recognized!")    
+    except:
+        img = cv2.imread(imgpath)
+        print("image path recognized!") 
     scale = res / max(img.shape[0], img.shape[1])
     w = int(img.shape[1] * scale)
     h = int(img.shape[0] * scale)
@@ -48,9 +66,16 @@ def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = Tr
 
     matcher = matcher.to(device).eval()
     # Run LoFTR
+
     print("loading images")
     img0_torch = load_torch_image(img0_pth, device, res)
     img1_torch = load_torch_image(img1_pth, device, res)
+    print("loading background images")
+    img0 = load_image(img0_pth, res)
+    img1 = load_image(img1_pth, res)
+
+
+
     batch = {"image0": K.color.rgb_to_grayscale(img0_torch), 
             "image1": K.color.rgb_to_grayscale(img1_torch)}
     print("matching images")
@@ -61,9 +86,7 @@ def single_loftr_figure(img0_pth, img1_pth, alpha = 1, threshold = 0, lines = Tr
         mconf = batch['mconf'].cpu().numpy()
     
     results = pd.DataFrame({'mkpts0': mkpts0.tolist(), 'mkpts1': mkpts1.tolist(), 'mconf': mconf.tolist()}) 
-    print("loading images")
-    img0 = load_image(img0_pth, res)
-    img1 = load_image(img1_pth, res)
+
 
     color = cm.jet(results.query(f'mconf > {threshold}').mconf)
     text = [

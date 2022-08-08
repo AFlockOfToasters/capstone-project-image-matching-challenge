@@ -48,6 +48,7 @@ def load_pairs_and_cal(scenes, datadir):
 
     return pair, calibration, scalings
 
+
 def plot_camera_positions(Rs, Ts, img_ids,scalings, scene="", cmap="Blues", opacity = 1):
     scale = 1
     if scene != "":

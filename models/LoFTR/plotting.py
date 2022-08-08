@@ -2,6 +2,7 @@ import bisect
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.patheffects as PathEffects
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.express as px
@@ -55,10 +56,10 @@ def make_matching_figure(
     axes[1].scatter(mkpts1[:, 0], mkpts1[:, 1], c=color, s=4)
 
     # put txts
-    txt_color = 'k' if img0[:100, :200].mean() > 200 else 'w'
-    fig.text(
+    txt = fig.text(
         0.01, 0.99, '\n'.join(text), transform=fig.axes[0].transAxes,
-        fontsize=15, va='top', ha='left', color=txt_color)
+        fontsize=15, va='top', ha='left', color="w")
+    txt.set_path_effects([PathEffects.withStroke(linewidth =2, foreground="k")])
 
     # save or return figure
     if path:

@@ -13,7 +13,7 @@ A dashboard, created using Plotly Dash, makes it easy to navigate through the da
 python app.py
 ```
 
-The Dashboard can then be reached in a browser at [127.0.0.1:8050](http://127.0.0.1:8050).
+The dashboard can then be reached in a browser at [127.0.0.1:8050](http://127.0.0.1:8050).
 
 ## Requirements
 

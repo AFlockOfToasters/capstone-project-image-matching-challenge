@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-#from plotly.subplots import make_subplots
 
 def load_pairs_and_cal(scenes, datadir):
     
@@ -48,7 +47,6 @@ def load_pairs_and_cal(scenes, datadir):
             calibration = pd.concat([calibration,calibrationappend],axis=0)
 
     return pair, calibration, scalings
-
 
 
 def plot_camera_positions(Rs, Ts, img_ids,scalings, scene="", cmap="Blues", opacity = 1):

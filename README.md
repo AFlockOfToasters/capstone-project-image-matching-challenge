@@ -8,7 +8,11 @@ The [EDA notebook](notebooks/EDA.ipynb) gives an overview over the dataset.
 
 The [LoFTR notebook](models/LoFTR/LoFTR.ipynb) demonstrates how to run LoFTR with PyTorch and how to plot matched images. The standalone [Python script](models/LoFTR/LoFTR.py) can be used to calculate matches for all possible image pairs in a given folder.
 
-A dashboard, created using Plotly Dash, makes it easy to navigate through the dataset, plot matches for all image pairs, and even allows matching of uploaded custom images. To use it, navigate to [dashboard](dashboard/) and run:
+A dashboard, created using Plotly Dash, makes it easy to navigate through the dataset, plot matches for all image pairs, and even allows matching of uploaded custom images. 
+
+![Dashboard_screenshot](dashboard/dashboard.png)
+
+To use it, navigate to [dashboard](dashboard/) and run:
 
 ```BASH
 

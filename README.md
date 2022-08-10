@@ -1,5 +1,7 @@
 # Two Eyes See M👁️re - A Capstone Project by Dieter Janzen and Bernd Ackermann
 
+*This repository was created as our final capstone project to finish our [neuefische Data Science bootcamp](https://www.neuefische.de/en/bootcamp/data-science). You can also look at the slides of our [final presentation](presentation.pdf) and hopefully soon find a recording of it on the [neuefische Youtube channel](https://www.youtube.com/c/neuefische)*
+
 Position-based image matching is used in 3D scanning of real objects under normally calibrated conditions. Using [LoFTR](https://zju3dv.github.io/loftr/), we match images regardless of size, lighting conditions, obstacles, and even photo filters, enabling the first step in digital 3D preservation of monuments and landmarks from mixed public images.
 
 The [EDA notebook](notebooks/EDA.ipynb) gives an overview over the dataset.

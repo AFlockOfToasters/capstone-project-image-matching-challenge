@@ -12,7 +12,14 @@ A dashboard, created using Plotly Dash, makes it easy to navigate through the da
 
 ![Dashboard_screenshot](dashboard/dashboard.png)
 
-To use it, navigate to [dashboard](dashboard/) and run:
+To use it after setup (see below), start the virtual environment, navigate to [dashboard](dashboard/)
+
+```BASH
+source .venv/bin/activate
+cd dashboard
+```
+
+and run the app from the dashboard-folder:
 
 ```BASH
 
